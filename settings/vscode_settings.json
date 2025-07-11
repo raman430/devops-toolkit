@@ -1,0 +1,13 @@
+{
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "files.trimTrailingWhitespace": true,
+    "editor.formatOnSave": true,
+    "editor.rulers": [80, 120],
+    "workbench.startupEditor": "none",
+    "terminal.integrated.fontSize": 14,
+    "git.enableSmartCommit": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    }
+}
