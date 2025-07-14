@@ -167,3 +167,82 @@ aws ec2 describe-instances --output json | jq -r '.Reservations[].Instances[] | 
 | Tail Lambda logs          | `aws logs tail /aws/lambda/func --follow`             |
 | Retrieve a secret         | `aws secretsmanager get-secret-value --secret-id <name>` |
 | List instances (readable) | `aws ec2 describe-instances --output table`           |
+
+
+# Traversing from Basic - Intermediate - Advanced using a AWS CLI logically:
+Basic:
+# 1. Show help for the SSM service (discover available commands)
+aws ssm help
+
+# 2. Show help for 'describe-parameters' (see all options)
+aws ssm describe-parameters help
+
+# 3. List all SSM parameters (raw output, paginated)
+aws ssm describe-parameters
+
+# 4. List just parameter names (text format)
+aws ssm describe-parameters --query "Parameters[*].Name" --output text
+
+# 5. List just parameter names (table format)
+aws ssm describe-parameters --query "Parameters[*].Name" --output table
+
+Intermediate:
+# 6. List parameter names and types (table)
+aws ssm describe-parameters --query "Parameters[*].[Name,Type]" --output table
+
+# 7. List names, types, and KMS KeyId (for SecureString params)
+aws ssm describe-parameters --query "Parameters[*].[Name,Type,KeyId]" --output table
+
+# 8. List names, types, versions, and last modified date
+aws ssm describe-parameters --query "Parameters[*].[Name,Type,Version,LastModifiedDate]" --output table
+
+# 9. List only SecureString parameters (table)
+aws ssm describe-parameters --query "Parameters[?Type=='SecureString'].[Name,KeyId]" --output table
+
+# 10. Filter parameters by name prefix (e.g., "/my/app/")
+aws ssm describe-parameters --parameter-filters Key=Name,Option=BeginsWith,Values="/my/app/"
+
+# 11. Combine query and grep for quick ad-hoc filtering (text output)
+aws ssm describe-parameters --query "Parameters[*].Name" --output text | grep prod
+
+# 12. Output as table, grep for substring (e.g., SecureString)
+aws ssm describe-parameters --query "Parameters[*].[Name,Type,KeyId]" --output table | grep SecureString
+
+Advanced:
+# 13. Get all parameters without pagination (be careful if you have thousands)
+aws ssm describe-parameters --query "Parameters[*].Name" --output text --no-paginate
+
+# 14. Scroll output interactively using 'less'
+aws ssm describe-parameters --query "Parameters[*].Name" --output table --no-paginate | less
+
+# 15. Export all parameter names to a file for further analysis
+aws ssm describe-parameters --query "Parameters[*].Name" --output text --no-paginate > ssm_names.txt
+
+# 16. Get parameters by path (organized by prefix, auto-paginates)
+aws ssm get-parameters-by-path --path "/your/prefix/" --recursive --query "Parameters[*].Name" --output table
+
+# 17. Grep for multiple words (e.g., 'prod' or 'staging') in the output
+aws ssm describe-parameters --query "Parameters[*].[Name,Type]" --output table | grep -E 'prod|staging'
+
+# 18. Grep for specific KMS KeyId substring in the output table
+aws ssm describe-parameters --query "Parameters[*].[Name,Type,KeyId]" --output table | grep "kms"
+
+# 19. Use jq for more powerful filtering on JSON output (advanced, requires jq)
+aws ssm describe-parameters --output json --no-paginate | jq -r '.Parameters[] | select(.Name | test("my-app")) | .Name'
+
+# 20. For very large result sets: paginate manually using NextToken (bash loop, advanced scripting)
+# (Sample pseudocode)
+NEXT_TOKEN=""
+while : ; do
+    if [ -z "$NEXT_TOKEN" ]; then
+        OUT=$(aws ssm describe-parameters)
+    else
+        OUT=$(aws ssm describe-parameters --starting-token "$NEXT_TOKEN")
+    fi
+    echo "$OUT" | jq -r '.Parameters[].Name'
+    NEXT_TOKEN=$(echo "$OUT" | jq -r '.NextToken // empty')
+    [ -z "$NEXT_TOKEN" ] && break
+done
+
+# 21. Combine with awk/cut for field extraction (e.g., print only name column)
+aws ssm describe-parameters --query "Parameters[*].[Name,Type]" --output table | grep prod | awk '{print $2}'
