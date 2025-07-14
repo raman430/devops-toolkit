@@ -246,3 +246,121 @@ done
 
 # 21. Combine with awk/cut for field extraction (e.g., print only name column)
 aws ssm describe-parameters --query "Parameters[*].[Name,Type]" --output table | grep prod | awk '{print $2}'
+
+=======================================================================================
+
+# ✅ AWS CLI SSO Setup Guide (All Commands and Configuration)
+
+This file provides a complete, command-based guide to setting up AWS CLI with SSO.
+
+---
+
+## 🧰 1. Check AWS CLI Version
+```bash
+aws --version
+```
+
+---
+
+## 📦 2. Install or Upgrade AWS CLI v2
+Refer to official guide: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html
+
+---
+
+## 📄 3. Configure SSO Profile
+```bash
+aws configure sso --profile my-sso-profile
+```
+
+Example input:
+```
+SSO session name (Recommended): my-sso-session
+SSO start URL [None]: https://my-org.awsapps.com/start
+SSO region [None]: eu-west-2
+SSO account ID [None]: 123456789012
+SSO role name [None]: Developer
+CLI default client Region [None]: eu-west-2
+CLI default output format [None]: json
+```
+
+---
+
+## 📁 4. Example SSO Profile in ~/.aws/config
+```ini
+[profile my-sso-profile]
+sso_start_url = https://my-org.awsapps.com/start
+sso_region = eu-west-2
+sso_account_id = 123456789012
+sso_role_name = Developer
+region = eu-west-2
+output = json
+```
+
+---
+
+## 🔐 5. Login to AWS SSO
+```bash
+aws sso login --profile my-sso-profile
+```
+
+---
+
+## ✅ 6. Use the Profile to Run AWS Commands
+
+### Option A: Use profile directly
+```bash
+aws s3 ls --profile my-sso-profile
+```
+
+### Option B: Set profile as environment variable
+```bash
+export AWS_PROFILE=my-sso-profile
+aws ec2 describe-instances
+```
+
+---
+
+## 🔁 7. Shared Session-Based Config (Optional)
+```ini
+[sso-session my-session]
+sso_start_url = https://my-org.awsapps.com/start
+sso_region = eu-west-2
+
+[profile my-sso-profile]
+sso_session = my-session
+sso_account_id = 123456789012
+sso_role_name = Developer
+region = eu-west-2
+```
+
+---
+
+## 🧪 8. Verify Caller Identity
+```bash
+aws sts get-caller-identity --profile my-sso-profile
+```
+
+---
+
+## 🛠️ 9. Troubleshooting Commands
+
+### Clear SSO token cache:
+```bash
+rm -rf ~/.aws/sso/cache/*
+```
+
+### Re-check identity after login:
+```bash
+aws sts get-caller-identity --profile my-sso-profile
+```
+
+---
+
+## 📂 10. Key File Paths
+
+- `~/.aws/config` → SSO profile settings
+- `~/.aws/sso/cache/` → Temporary SSO tokens
+
+---
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
